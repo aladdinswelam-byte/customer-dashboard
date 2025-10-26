@@ -128,6 +128,8 @@ function showCustomerDetail(phone) {
       <td>$${o.amount.toFixed(2)}</td>`;
     tbody.appendChild(tr);
   });
+  new bootstrap.Collapse('#detailPane', { toggle: false }).show();
+}
 }
 
 /* ---------- 6.  CHARTS ---------- */
@@ -192,12 +194,21 @@ function chartReplace(canvasId, cfg) {
 /* ---------- 7.  UTILITIES ---------- */
 function tryParseDate(v) {
   if (!v) return null;
+
+  // 1. Unix-time number (ms)
+  if (typeof v === 'number') return new Date(v).toISOString();
+
+  // 2. String that is only digits
+  if (String(v).match(/^\d{10,}$/)) return new Date(Number(v)).toISOString();
+
+  // 3. Normal ISO or d/m/y strings
   const d = new Date(v);
   if (!isNaN(d)) return d.toISOString();
+
   const m = String(v).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (m) {
     let [_, day, mo, yr] = m;
-    if (yr.length===2) yr = '20'+yr;
+    if (yr.length === 2) yr = '20' + yr;
     const iso = new Date(`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`);
     if (!isNaN(iso)) return iso.toISOString();
   }
@@ -233,4 +244,5 @@ function showLoading(on) {
   const btn = document.getElementById('loadBtn');
   btn.disabled = on;
   btn.textContent = on ? 'Loading…' : 'Load Data';
+
 }
