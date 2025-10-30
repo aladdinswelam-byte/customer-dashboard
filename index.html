@@ -17,7 +17,8 @@
     th,td{padding:.6rem;text-align:left}
     th{background:#1976d2;color:#fff}
     tr:nth-child(even){background:#f2f2f2}
-    .phone-table{margin-top:.8rem}
+    a{color:#1976d2;text-decoration:none}
+    a:hover{text-decoration:underline}
     @media(max-width:700px){body{padding:.5rem} .controls{flex-direction:column}}
   </style>
 </head>
@@ -25,7 +26,6 @@
   <h1>Restaurant Dashboard</h1>
   <div id="msg">Loading data …</div>
 
-  <!-- ➊  OLD FILTERS  -->
   <div class="controls">
     <label>Restaurant
       <select id="restFilter"><option>All</option></select>
@@ -57,7 +57,6 @@
     </label>
 
     <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
-
     <button id="applyBtn">Apply filters</button>
   </div>
 
@@ -72,8 +71,6 @@
     <tbody></tbody>
   </table>
 
-  <div id="phoneDetail"></div>
-
   <script>
     const DATA_URL = 'https://raw.githubusercontent.com/aladdinswelam-byte/customer-dashboard/main/data.json';
 
@@ -86,6 +83,7 @@
       .then(r=>r.json())
       .then(js=>{
         rawRows=js;
+        localStorage.setItem('dashboardJSON', JSON.stringify(rawRows)); // for detail page
         buildFilters();
         aggregateByPhone();
         applyAllFilters();
@@ -103,10 +101,8 @@
         return d.getFullYear();
       }).filter(y=>!isNaN(y)))].sort((a,b)=>b-a);
 
-      const rSel=document.getElementById('restFilter');
-      rSel.innerHTML=rests.map(v=>`<option>${v}</option>`).join('');
-      const ySel=document.getElementById('yearFilter');
-      ySel.innerHTML=years.map(v=>`<option>${v}</option>`).join('');
+      document.getElementById('restFilter').innerHTML=rests.map(v=>`<option>${v}</option>`).join('');
+      document.getElementById('yearFilter').innerHTML=years.map(v=>`<option>${v}</option>`).join('');
     }
 
     function aggregateByPhone(){
@@ -167,73 +163,23 @@
       drawTable(list);
     }
 
-function drawTable(list){
-  const tb=document.querySelector('#mainTable tbody');
-  tb.innerHTML='';
-  list.forEach(p=>{
-    const html=`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/><title>Client ${p.phone}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <style>body{font-family:system-ui,Arial,Helvetica,sans-serif;margin:0;padding:1rem;background:#f5f7fa;color:#333}
-         table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.1)}
-         th,td{padding:.6rem;text-align:left}th{background:#1976d2;color:#fff}tr:nth-child(even){background:#f2f2f2}</style>
-</head>
-<body>
-  <h2>Client: ${p.name} – Phone: ${p.phone}</h2>
-  <p><strong>Total spent:</strong> ${p.total.toFixed(2)} &nbsp;|&nbsp;
-     <strong>Average:</strong> ${p.avg.toFixed(2)} &nbsp;|&nbsp;
-     <strong>Orders:</strong> ${p.orders}</p>
-  <table>
-    <thead><tr><th>Date</th><th>Restaurant</th><th>Payment</th><th>Amount</th></tr></thead>
-    <tbody>
-      ${p.orderList.map(o=>`
-        <tr>
-          <td>${o.date.toLocaleDateString()}</td>
-          <td>${o.rest}</td>
-          <td>${o.pay}</td>
-          <td>${o.value.toFixed(2)}</td>
-        </tr>`).join('')}
-    </tbody>
-  </table>
-</body>
-</html>`;
-    const row=document.createElement('tr');
-    row.innerHTML=`
-      <td><a href="data:text/html;charset=utf-8,${encodeURIComponent(html)}" target="_blank">${p.phone}</a></td>
-      <td>${p.name}</td>
-      <td>${p.orders}</td>
-      <td>${p.total.toFixed(2)}</td>
-      <td>${p.avg.toFixed(2)}</td>
-      <td>${p.lastOrder.toLocaleDateString()}</td>
-      <td>${p.daysAgo}</td>`;
-    tb.appendChild(row);
-  });
-  document.getElementById('stats').textContent=`Showing ${list.length} phones`;
-}
-    function drawPhoneDetail(p){
-      const div=document.getElementById('phoneDetail');
-      div.innerHTML=`
-        <h3>Detail for ${p.phone} – ${p.name}</h3>
-        <p><strong>Average spend:</strong> ${p.avg.toFixed(2)} |
-           <strong>Total spent:</strong> ${p.total.toFixed(2)} |
-           <strong>Last order:</strong> ${p.lastOrder.toLocaleDateString()} (${p.daysAgo} days ago)</p>
-        <table class="phone-table">
-          <thead><tr><th>Date</th><th>Restaurant</th><th>Payment</th><th>Amount</th></tr></thead>
-          <tbody>
-            ${p.orderList.map(o=>`
-              <tr>
-                <td>${o.date.toLocaleDateString()}</td>
-                <td>${o.rest}</td>
-                <td>${o.pay}</td>
-                <td>${o.value.toFixed(2)}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>`;
+    function drawTable(list){
+      const tb=document.querySelector('#mainTable tbody');
+      tb.innerHTML='';
+      list.forEach(p=>{
+        const row=document.createElement('tr');
+        row.innerHTML=`
+          <td><a href="details.html?phone=${encodeURIComponent(p.phone)}" target="_blank">${p.phone}</a></td>
+          <td>${p.name}</td>
+          <td>${p.orders}</td>
+          <td>${p.total.toFixed(2)}</td>
+          <td>${p.avg.toFixed(2)}</td>
+          <td>${p.lastOrder.toLocaleDateString()}</td>
+          <td>${p.daysAgo}</td>`;
+        tb.appendChild(row);
+      });
+      document.getElementById('stats').textContent=`Showing ${list.length} phones`;
     }
   </script>
 </body>
 </html>
-
