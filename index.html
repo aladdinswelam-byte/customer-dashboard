@@ -2,97 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Restaurant Dashboard</title>
+  <title>Dashboard (auto JSON)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="stylesheet" href="style.css"/>
-  <!-- SheetJS excel reader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body{font-family:system-ui,Arial,Helvetica,sans-serif;margin:0;padding:1rem;background:#f5f7fa;color:#333}
+    h1{text-align:center;margin-top:0}
+    #dynFilters{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem}
+    #dynFilters label{background:#fff;padding:.5rem;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.1);font-size:.85rem}
+    select,input{padding:.4rem;border:1px solid #bbb;border-radius:4px}
+    button{background:#1976d2;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:4px;cursor:pointer}
+    button:hover{background:#1565c0}
+    #stats{margin-bottom:.5rem;font-weight:500}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+    th,td{padding:.6rem;text-align:left}
+    th{background:#1976d2;color:#fff}
+    tr:nth-child(even){background:#f2f2f2}
+    .phone-table{margin-top:.8rem}
+    @media(max-width:700px){body{padding:.5rem} #dynFilters{flex-direction:column}}
+  </style>
 </head>
 <body>
   <h1>Restaurant Dashboard</h1>
+  <div id="msg">Loading data …</div>
 
-  <input type="file" id="fileInput" accept=".xlsx,.xls"/>
-
-  <!-- ✅ filters will be RE-WRITTEN after upload -->
   <div id="dynFilters"></div>
-
   <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
   <button id="applyBtn">Apply filters</button>
 
   <div id="stats"></div>
 
-  <table id="mainTable">
+  <table id="phoneTable">
     <thead>
       <tr>
-        <th>Account Name</th>
-        <th>Account#</th>
-        <th>Phone</th>
-        <th>Restaurant</th>
-        <th>Orders</th>
-        <th>Total spent</th>
-        <th>Avg spend</th>
-        <th>Last order</th>
-        <th>Days ago</th>
+        <th>Phone</th><th>Account Name</th><th>Orders</th><th>Total</th><th>Avg</th><th>Last order</th><th>Days ago</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
+  <div id="phoneDetail"></div>
+
   <script>
+    const DATA_URL = 'https://raw.githubusercontent.com/aladdinswelam-byte/customer-dashboard/main/data.json';
+
     let rawRows=[], aggPhones=[], uniqueOptions={};
     const today=new Date();
 
-    document.getElementById('fileInput').addEventListener('change', handleFile);
     document.getElementById('applyBtn').addEventListener('click', applyAllFilters);
 
-    function handleFile(e){
-      const file=e.target.files[0];
-      if(!file){alert("No file selected");return;}
-      const reader=new FileReader();
-      reader.onload=evt=>{
-        const wb=XLSX.read(evt.target.result,{type:'binary'});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        rawRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    fetch(DATA_URL,{cache:'no-cache',mode:'cors'})
+      .then(r=>r.json())
+      .then(js=>{
+        rawRows=js;
         buildSmartFilters();
         aggregateByPhone();
         applyAllFilters();
-      };
-      reader.readAsBinaryString(file);
-    }
+        document.getElementById('msg').style.display='none';
+      })
+      .catch(err=>{
+        document.getElementById('msg').textContent='Error: '+err.message;
+        console.error(err);
+      });
 
-    /* ----------  build drop-downs from DATA  ---------- */
     function buildSmartFilters(){
       uniqueOptions={};
-      const headers=['Restaurant','Year'];          // only the ones we want
-      // Restaurant
       const rests=['All', ...new Set(rawRows.map(r=>r['Resturant']||r['Restaurant']||'').filter(v=>v))].sort();
-      uniqueOptions.Restaurant=rests;
-      // Year
       const years=['All', ...new Set(rawRows.map(r=>{
         const d=new Date(r['Created']||r['OrderDate']||'');
         return d.getFullYear();
       }).filter(y=>!isNaN(y)))].sort((a,b)=>b-a);
+      uniqueOptions.Restaurant=rests;
       uniqueOptions.Year=years;
 
-      // write HTML
       const box=document.getElementById('dynFilters');
       box.innerHTML='';
-      headers.forEach(h=>{
+      ['Restaurant','Year'].forEach(h=>{
         const lbl=document.createElement('label');
         lbl.innerHTML=`${h} <select id="filter-${h}"></select>`;
         box.appendChild(lbl);
-        const sel=document.getElementById(`filter-${h}`);
-        sel.innerHTML=uniqueOptions[h].map(v=>`<option>${v}</option>`).join('');
+        document.getElementById(`filter-${h}`).innerHTML=uniqueOptions[h].map(v=>`<option>${v}</option>`).join('');
       });
     }
 
-    /* ----------  roll-up by phone  ---------- */
     function aggregateByPhone(){
       const map={};
       rawRows.forEach(r=>{
         const ph=(r['Account Phones']||r['Phone']||'').toString().trim();
-        if(!ph)return;
-        if(!map[ph])map[ph]={phone:ph, name:r['Account Name']||'', orders:[], total:0};
+        if(!ph) return;
+        if(!map[ph]) map[ph]={phone:ph, name:r['Account Name']||'', orders:[], total:0};
         const val=parseFloat(r['Total Price'])||0;
         map[ph].orders.push({
           date:new Date(r['Created']||r['OrderDate']),
@@ -120,16 +118,13 @@
       });
     }
 
-    /* ----------  filter & draw  ---------- */
     function applyAllFilters(){
       let list=[...aggPhones];
-      // restaurant
       const restSel=document.getElementById('filter-Restaurant')?.value||'All';
-      if(restSel!=='All') list=list.filter(p=>p.orderList.some(o=>o.rest===restSel));
-      // year
       const yearSel=document.getElementById('filter-Year')?.value||'All';
+      if(restSel!=='All') list=list.filter(p=>p.orderList.some(o=>o.rest===restSel));
       if(yearSel!=='All') list=list.filter(p=>p.year===parseInt(yearSel));
-      // numeric ranges
+
       const avgMin=parseFloat(document.getElementById('avgMin').value)||0;
       const avgMax=parseFloat(document.getElementById('avgMax').value)||Infinity;
       const totMin=parseFloat(document.getElementById('totMin').value)||0;
@@ -149,15 +144,15 @@
     }
 
     function drawTable(list){
-      const tb=document.querySelector('#mainTable tbody');
+      const tb=document.querySelector('#phoneTable tbody');
       tb.innerHTML='';
       list.forEach(p=>{
         const tr=document.createElement('tr');
+        tr.style.cursor='pointer';
+        tr.onclick=()=>drawPhoneDetail(p);
         tr.innerHTML=`
+          <td>${p.phone}</td>
           <td>${p.name}</td>
-          <td>${p.phone}</td>
-          <td>${p.phone}</td>
-          <td>${p.orderList[0]?.rest||''}</td>
           <td>${p.orders}</td>
           <td>${p.total.toFixed(2)}</td>
           <td>${p.avg.toFixed(2)}</td>
@@ -166,6 +161,27 @@
         tb.appendChild(tr);
       });
       document.getElementById('stats').textContent=`Showing ${list.length} phones`;
+    }
+
+    function drawPhoneDetail(p){
+      const div=document.getElementById('phoneDetail');
+      div.innerHTML=`
+        <h3>Detail for ${p.phone} – ${p.name}</h3>
+        <p><strong>Average spend:</strong> ${p.avg.toFixed(2)} |
+           <strong>Total spent:</strong> ${p.total.toFixed(2)} |
+           <strong>Last order:</strong> ${p.lastOrder.toLocaleDateString()} (${p.daysAgo} days ago)</p>
+        <table class="phone-table">
+          <thead><tr><th>Date</th><th>Restaurant</th><th>Payment</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${p.orderList.map(o=>`
+              <tr>
+                <td>${o.date.toLocaleDateString()}</td>
+                <td>${o.rest}</td>
+                <td>${o.pay}</td>
+                <td>${o.value.toFixed(2)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
     }
   </script>
 </body>
