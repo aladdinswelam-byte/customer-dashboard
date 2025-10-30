@@ -1,52 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8"/>
   <title>Restaurant Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="style.css"/>
   <!-- SheetJS excel reader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Restaurant Dashboard</h1>
 
-  <input type="file" id="fileInput" accept=".xlsx,.xls" />
+  <input type="file" id="fileInput" accept=".xlsx,.xls"/>
 
-  <div class="controls">
-    <label>Restaurant
-      <select id="restFilter"><option>All</option></select>
-    </label>
+  <!-- ✅ filters will be RE-WRITTEN after upload -->
+  <div id="dynFilters"></div>
 
-    <label>Year
-      <select id="yearFilter"><option>All</option></select>
-    </label>
-
-    <label>Avg spend ≥
-      <input type="number" id="avgMin" step="0.01" placeholder="0" />
-    </label>
-    <label>Avg spend ≤
-      <input type="number" id="avgMax" step="0.01" />
-    </label>
-
-    <label>Total spend ≥
-      <input type="number" id="totMin" step="0.01" />
-    </label>
-    <label>Total spend ≤
-      <input type="number" id="totMax" step="0.01" />
-    </label>
-
-    <label>Days since last order ≥
-      <input type="number" id="lastMin" placeholder="0" />
-    </label>
-    <label>Days since last order ≤
-      <input type="number" id="lastMax" />
-    </label>
-
-    <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
-
-    <button id="applyBtn">Apply filters</button>
-  </div>
+  <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
+  <button id="applyBtn">Apply filters</button>
 
   <div id="stats"></div>
 
@@ -67,6 +38,135 @@
     <tbody></tbody>
   </table>
 
-  <script src="app.js"></script>
+  <script>
+    let rawRows=[], aggPhones=[], uniqueOptions={};
+    const today=new Date();
+
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+    document.getElementById('applyBtn').addEventListener('click', applyAllFilters);
+
+    function handleFile(e){
+      const file=e.target.files[0];
+      if(!file){alert("No file selected");return;}
+      const reader=new FileReader();
+      reader.onload=evt=>{
+        const wb=XLSX.read(evt.target.result,{type:'binary'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        rawRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+        buildSmartFilters();
+        aggregateByPhone();
+        applyAllFilters();
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    /* ----------  build drop-downs from DATA  ---------- */
+    function buildSmartFilters(){
+      uniqueOptions={};
+      const headers=['Restaurant','Year'];          // only the ones we want
+      // Restaurant
+      const rests=['All', ...new Set(rawRows.map(r=>r['Resturant']||r['Restaurant']||'').filter(v=>v))].sort();
+      uniqueOptions.Restaurant=rests;
+      // Year
+      const years=['All', ...new Set(rawRows.map(r=>{
+        const d=new Date(r['Created']||r['OrderDate']||'');
+        return d.getFullYear();
+      }).filter(y=>!isNaN(y)))].sort((a,b)=>b-a);
+      uniqueOptions.Year=years;
+
+      // write HTML
+      const box=document.getElementById('dynFilters');
+      box.innerHTML='';
+      headers.forEach(h=>{
+        const lbl=document.createElement('label');
+        lbl.innerHTML=`${h} <select id="filter-${h}"></select>`;
+        box.appendChild(lbl);
+        const sel=document.getElementById(`filter-${h}`);
+        sel.innerHTML=uniqueOptions[h].map(v=>`<option>${v}</option>`).join('');
+      });
+    }
+
+    /* ----------  roll-up by phone  ---------- */
+    function aggregateByPhone(){
+      const map={};
+      rawRows.forEach(r=>{
+        const ph=(r['Account Phones']||r['Phone']||'').toString().trim();
+        if(!ph)return;
+        if(!map[ph])map[ph]={phone:ph, name:r['Account Name']||'', orders:[], total:0};
+        const val=parseFloat(r['Total Price'])||0;
+        map[ph].orders.push({
+          date:new Date(r['Created']||r['OrderDate']),
+          rest:r['Resturant']||r['Restaurant']||'',
+          pay:r['Payment Method']||'',
+          value:val
+        });
+        map[ph].total+=val;
+      });
+      aggPhones=Object.values(map).map(x=>{
+        x.orders.sort((a,b)=>a.date-b.date);
+        const last=x.orders[x.orders.length-1].date;
+        const days=Math.floor((today-last)/864e5);
+        return{
+          phone:x.phone,
+          name:x.name,
+          orders:x.orders.length,
+          total:x.total,
+          avg:x.total/x.orders.length,
+          lastOrder:last,
+          daysAgo:days,
+          year:last.getFullYear(),
+          orderList:x.orders
+        };
+      });
+    }
+
+    /* ----------  filter & draw  ---------- */
+    function applyAllFilters(){
+      let list=[...aggPhones];
+      // restaurant
+      const restSel=document.getElementById('filter-Restaurant')?.value||'All';
+      if(restSel!=='All') list=list.filter(p=>p.orderList.some(o=>o.rest===restSel));
+      // year
+      const yearSel=document.getElementById('filter-Year')?.value||'All';
+      if(yearSel!=='All') list=list.filter(p=>p.year===parseInt(yearSel));
+      // numeric ranges
+      const avgMin=parseFloat(document.getElementById('avgMin').value)||0;
+      const avgMax=parseFloat(document.getElementById('avgMax').value)||Infinity;
+      const totMin=parseFloat(document.getElementById('totMin').value)||0;
+      const totMax=parseFloat(document.getElementById('totMax').value)||Infinity;
+      const lastMin=parseInt(document.getElementById('lastMin').value)||0;
+      const lastMax=parseInt(document.getElementById('lastMax').value)||Infinity;
+      const lostOnly=document.getElementById('lostOnly').checked;
+
+      list=list.filter(p=>
+        p.avg>=avgMin && p.avg<=avgMax &&
+        p.total>=totMin && p.total<=totMax &&
+        p.daysAgo>=lastMin && p.daysAgo<=lastMax &&
+        (!lostOnly || p.daysAgo>90)
+      );
+      list.sort((a,b)=>b.orders-a.orders);
+      drawTable(list);
+    }
+
+    function drawTable(list){
+      const tb=document.querySelector('#mainTable tbody');
+      tb.innerHTML='';
+      list.forEach(p=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${p.name}</td>
+          <td>${p.phone}</td>
+          <td>${p.phone}</td>
+          <td>${p.orderList[0]?.rest||''}</td>
+          <td>${p.orders}</td>
+          <td>${p.total.toFixed(2)}</td>
+          <td>${p.avg.toFixed(2)}</td>
+          <td>${p.lastOrder.toLocaleDateString()}</td>
+          <td>${p.daysAgo}</td>`;
+        tb.appendChild(tr);
+      });
+      document.getElementById('stats').textContent=`Showing ${list.length} phones`;
+    }
+  </script>
 </body>
 </html>
