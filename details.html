@@ -16,48 +16,52 @@
 </head>
 <body>
   <h2 id="title"></h2>
-
-  <!-- ➊  NEW METRICS  -->
   <p id="summary"></p>
   <p id="metrics"></p>
-
   <table id="detailTable">
     <thead><tr><th>Date</th><th>Restaurant</th><th>Payment</th><th>Amount</th></tr></thead>
     <tbody></tbody>
   </table>
 
   <script>
-    const allData = JSON.parse(localStorage.getItem('dashboardJSON')||'[]');
-    const phone   = new URLSearchParams(location.search).get('phone');
-    const rows    = allData.filter(r=>(r['Account Phones']||r['Phone']||'').toString().trim()===phone);
+    const DATA_URL = 'https://raw.githubusercontent.com/aladdinswelam-byte/customer-dashboard/main/data.json';
+    const phone    = new URLSearchParams(location.search).get('phone');
 
-    if (!rows.length){document.body.innerHTML='<h2>No data for this phone</h2>';throw 0;}
+    fetch(DATA_URL)
+      .then(r=>r.json())
+      .then(allData=>{
+        const rows = allData.filter(r=>(r['Account Phones']||r['Phone']||'').toString().trim()===phone);
+        if (!rows.length){document.body.innerHTML='<h2>No data for this phone</h2>';return;}
 
-    const name    = rows[0]['Account Name']||'—';
-    const total   = rows.reduce((s,r)=>s+parseFloat(r['Total Price']||0),0);
-    const avg     = total/rows.length||0;
+        const name  = rows[0]['Account Name']||'—';
+        const total = rows.reduce((s,r)=>s+parseFloat(r['Total Price']||0),0);
+        const avg   = total/rows.length||0;
 
-    /* ======  weekly frequency  ====== */
-    const dates = rows.map(r=>new Date(r['Created']||r['OrderDate']||r['Created Date']||'')).sort((a,b)=>a-b);
-    const daysSpan = (dates[dates.length-1] - dates[0]) / (1000*60*60*24) || 1;   // avoid /0
-    const ordersPerWeek = (rows.length / daysSpan) * 7;                             // orders/week
-    const weeklyText = ordersPerWeek < 1 ? 'Less than 1× per week' : `≈ ${ordersPerWeek.toFixed(1)}× per week`;
+        /* weekly frequency */
+        const dates = rows.map(r=>new Date(r['Created']||r['OrderDate']||r['Created Date']||'')).sort((a,b)=>a-b);
+        const daysSpan = (dates[dates.length-1] - dates[0]) / (1000*60*60*24) || 1;
+        const ordersPerWeek = (rows.length / daysSpan) * 7;
+        const weeklyText = ordersPerWeek < 1 ? 'Less than 1× per week' : `≈ ${ordersPerWeek.toFixed(1)}× per week`;
 
-    /* ======  fill page  ====== */
-    document.getElementById('title').textContent   = `Client: ${name} – Phone: ${phone}`;
-    document.getElementById('summary').textContent = `Total spent: ${total.toFixed(2)} | Average per order: ${avg.toFixed(2)} | Orders: ${rows.length}`;
-    document.getElementById('metrics').innerHTML   = `<span class="badge">${weeklyText}</span>`;
+        document.getElementById('title').textContent   = `Client: ${name} – Phone: ${phone}`;
+        document.getElementById('summary').textContent = `Total spent: ${total.toFixed(2)} | Average per order: ${avg.toFixed(2)} | Orders: ${rows.length}`;
+        document.getElementById('metrics').innerHTML   = `<span class="badge">${weeklyText}</span>`;
 
-    const tb = document.querySelector('#detailTable tbody');
-    rows.forEach(r=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td>${new Date(r['Created']||r['OrderDate']||r['Created Date']||'').toLocaleDateString()}</td>
-        <td>${r['Resturant']||r['Restaurant']||''}</td>
-        <td>${r['Payment Method']||''}</td>
-        <td>${parseFloat(r['Total Price']||0).toFixed(2)}</td>`;
-      tb.appendChild(tr);
-    });
+        const tb = document.querySelector('#detailTable tbody');
+        rows.forEach(r=>{
+          const tr=document.createElement('tr');
+          tr.innerHTML=`
+            <td>${new Date(r['Created']||r['OrderDate']||r['Created Date']||'').toLocaleDateString()}</td>
+            <td>${r['Resturant']||r['Restaurant']||''}</td>
+            <td>${r['Payment Method']||''}</td>
+            <td>${parseFloat(r['Total Price']||0).toFixed(2)}</td>`;
+          tb.appendChild(tr);
+        });
+      })
+      .catch(err=>{
+        document.body.innerHTML='<h2>Error loading data</h2>';
+        console.error(err);
+      });
   </script>
 </body>
 </html>
