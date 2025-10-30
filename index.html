@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Restaurant Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- SheetJS excel reader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>Restaurant Dashboard</h1>
+
+  <input type="file" id="fileInput" accept=".xlsx,.xls" />
+
+  <div class="controls">
+    <label>Restaurant
+      <select id="restFilter"><option>All</option></select>
+    </label>
+
+    <label>Year
+      <select id="yearFilter"><option>All</option></select>
+    </label>
+
+    <label>Avg spend ≥
+      <input type="number" id="avgMin" step="0.01" placeholder="0" />
+    </label>
+    <label>Avg spend ≤
+      <input type="number" id="avgMax" step="0.01" />
+    </label>
+
+    <label>Total spend ≥
+      <input type="number" id="totMin" step="0.01" />
+    </label>
+    <label>Total spend ≤
+      <input type="number" id="totMax" step="0.01" />
+    </label>
+
+    <label>Days since last order ≥
+      <input type="number" id="lastMin" placeholder="0" />
+    </label>
+    <label>Days since last order ≤
+      <input type="number" id="lastMax" />
+    </label>
+
+    <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
+
+    <button id="applyBtn">Apply filters</button>
+  </div>
+
+  <div id="stats"></div>
+
+  <table id="mainTable">
+    <thead>
+      <tr>
+        <th>Account Name</th>
+        <th>Account#</th>
+        <th>Phone</th>
+        <th>Restaurant</th>
+        <th>Orders</th>
+        <th>Total spent</th>
+        <th>Avg spend</th>
+        <th>Last order</th>
+        <th>Days ago</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="app.js"></script>
+</body>
+</html>
