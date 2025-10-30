@@ -25,26 +25,31 @@
 
   <script>
     const DATA_URL = 'https://raw.githubusercontent.com/aladdinswelam-byte/customer-dashboard/main/data.json';
-    const phone    = new URLSearchParams(location.search).get('phone');
+    const wanted   = new URLSearchParams(location.search).get('phone')?.trim();
 
     fetch(DATA_URL)
       .then(r=>r.json())
       .then(allData=>{
-        const rows = allData.filter(r=>(r['Account Phones']||r['Phone']||'').toString().trim()===phone);
-        if (!rows.length){document.body.innerHTML='<h2>No data for this phone</h2>';return;}
+        /* ----  normalise phone on BOTH sides  ---- */
+        const rows = allData.filter(r=>{
+          const ph = (r['Account Phones']||r['Phone']||'').toString().trim();
+          return ph === wanted;
+        });
+
+        if (!rows.length){document.body.innerHTML='<h2>No data for phone '+wanted+'</h2>';return;}
 
         const name  = rows[0]['Account Name']||'—';
         const total = rows.reduce((s,r)=>s+parseFloat(r['Total Price']||0),0);
         const avg   = total/rows.length||0;
 
-        /* weekly frequency */
+        /* ----  weekly frequency  ---- */
         const dates = rows.map(r=>new Date(r['Created']||r['OrderDate']||r['Created Date']||'')).sort((a,b)=>a-b);
         const daysSpan = (dates[dates.length-1] - dates[0]) / (1000*60*60*24) || 1;
         const ordersPerWeek = (rows.length / daysSpan) * 7;
         const weeklyText = ordersPerWeek < 1 ? 'Less than 1× per week' : `≈ ${ordersPerWeek.toFixed(1)}× per week`;
 
-        document.getElementById('title').textContent   = `Client: ${name} – Phone: ${phone}`;
-        document.getElementById('summary').textContent = `Total spent: ${total.toFixed(2)} | Average per order: ${avg.toFixed(2)} | Orders: ${rows.length}`;
+        document.getElementById('title').textContent   = `Client: ${name} – Phone: ${wanted}`;
+        document.getElementById('summary').textContent = `Total order sum: ${total.toFixed(2)} | Average per order: ${avg.toFixed(2)} | Orders: ${rows.length}`;
         document.getElementById('metrics').innerHTML   = `<span class="badge">${weeklyText}</span>`;
 
         const tb = document.querySelector('#detailTable tbody');
