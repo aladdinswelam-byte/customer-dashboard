@@ -22,7 +22,6 @@
   </table>
 
   <script>
-    /* ======  runs inside details.html  ====== */
     const allData = JSON.parse(localStorage.getItem('dashboardJSON')||'[]');
     const phone   = new URLSearchParams(location.search).get('phone');
     const rows    = allData.filter(r=>(r['Account Phones']||r['Phone']||'').toString().trim()===phone);
