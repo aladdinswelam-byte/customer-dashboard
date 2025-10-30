@@ -83,7 +83,6 @@
       .then(r=>r.json())
       .then(js=>{
         rawRows=js;
-        localStorage.setItem('dashboardJSON', JSON.stringify(rawRows)); // for detail page
         buildFilters();
         aggregateByPhone();
         applyAllFilters();
