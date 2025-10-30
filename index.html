@@ -25,16 +25,17 @@
 <body>
   <h1>Restaurant Dashboard</h1>
 
+  <!-- ➊  FILE PICKER  -->
   <input type="file" id="fileInput" accept=".xlsx,.xls"/>
 
-  <!-- dynamic filters will be injected here -->
+  <!-- ➋  DYNAMIC FILTERS  -->
   <div id="dynFilters"></div>
-
+  <label><input type="checkbox" id="lostOnly"> Lost customers only (90+ days)</label>
   <button id="applyBtn">Apply filters</button>
 
   <div id="stats"></div>
 
-  <!-- master phone list -->
+  <!-- ➌  PHONE LIST  -->
   <table id="phoneTable">
     <thead>
       <tr>
@@ -44,12 +45,12 @@
     <tbody></tbody>
   </table>
 
-  <!-- detail table for chosen phone -->
+  <!-- ➍  PHONE DETAIL  -->
   <div id="phoneDetail"></div>
 
   <script>
+    console.log("✅  Dashboard JS loaded");
     let rawRows=[], aggPhones=[], uniqueOptions={};
-
     const today=new Date();
 
     document.getElementById('fileInput').addEventListener('change', handleFile);
@@ -57,5 +58,165 @@
 
     function handleFile(e){
       const file=e.target.files[0];
+      if(!file){alert("No file selected");return;}
       const reader=new FileReader();
-      reader.onload=evt
+      reader.onload=evt=>{
+        const wb=XLSX.read(evt.target.result,{type:'binary'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        rawRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+        if(rawRows.length===0){alert("Empty sheet");return;}
+        buildSmartFilters();
+        aggregateByPhone();
+        applyAllFilters();
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    /* ----------  dynamic filters  ---------- */
+    function buildSmartFilters(){
+      uniqueOptions={};
+      const headers=Object.keys(rawRows[0]);
+      headers.forEach(h=>{
+        const set=new Set(rawRows.map(r=>r[h]).filter(v=>v!==''));
+        uniqueOptions[h]=['All', ...set].sort();
+      });
+      const box=document.getElementById('dynFilters');
+      box.innerHTML='';
+      headers.forEach(h=>{
+        const lbl=document.createElement('label');
+        lbl.innerHTML=`${h} <select id="filter-${h}"></select>`;
+        box.appendChild(lbl);
+        const sel=document.getElementById(`filter-${h}`);
+        sel.innerHTML=uniqueOptions[h].map(v=>`<option>${v}</option>`).join('');
+      });
+    }
+
+    /* ----------  roll-up by phone  ---------- */
+    function aggregateByPhone(){
+      const map={};
+      rawRows.forEach(r=>{
+        const ph=(r['Account Phones']||r['Phone']||'').toString().trim();
+        if(!ph)return;
+        if(!map[ph])map[ph]={phone:ph, name:r['Account Name']||'', orders:[], total:0};
+        const val=parseFloat(r['Total Price'])||0;
+        map[ph].orders.push({
+          date:new Date(r['Created']||r['OrderDate']),
+          rest:r['Resturant']||r['Restaurant']||'',
+          pay:r['Payment Method']||'',
+          value:val
+        });
+        map[ph].total+=val;
+      });
+      aggPhones=Object.values(map).map(x=>{
+        x.orders.sort((a,b)=>a.date-b.date);
+        const last=x.orders[x.orders.length-1].date;
+        const days=Math.floor((today-last)/864e5);
+        return{
+          phone:x.phone,
+          name:x.name,
+          orders:x.orders.length,
+          total:x.total,
+          avg:x.total/x.orders.length,
+          lastOrder:last,
+          daysAgo:days,
+          year:last.getFullYear(),
+          orderList:x.orders
+        };
+      });
+    }
+
+    /* ----------  apply filters  ---------- */
+    function applyAllFilters(){
+      // column filters
+      const filters={};
+      Object.keys(uniqueOptions).forEach(h=>{
+        filters[h]=document.getElementById(`filter-${h}`).value;
+      });
+      // filter raw rows
+      let rows=rawRows;
+      Object.entries(filters).forEach(([col,val])=>{
+        if(val!=='All') rows=rows.filter(r=>r[col]==val);
+      });
+      // re-aggregate
+      const map={};
+      rows.forEach(r=>{
+        const ph=(r['Account Phones']||r['Phone']||'').toString().trim();
+        if(!ph)return;
+        if(!map[ph])map[ph]={phone:ph, name:r['Account Name']||'', orders:[], total:0};
+        const v=parseFloat(r['Total Price'])||0;
+        map[ph].orders.push({
+          date:new Date(r['Created']||r['OrderDate']),
+          rest:r['Resturant']||r['Restaurant']||'',
+          pay:r['Payment Method']||'',
+          value:v
+        });
+        map[ph].total+=v;
+      });
+      let list=Object.values(map).map(x=>{
+        x.orders.sort((a,b)=>a.date-b.date);
+        const last=x.orders[x.orders.length-1].date;
+        const days=Math.floor((today-last)/864e5);
+        return{
+          phone:x.phone,
+          name:x.name,
+          orders:x.orders.length,
+          total:x.total,
+          avg:x.total/x.orders.length,
+          lastOrder:last,
+          daysAgo:days,
+          year:last.getFullYear(),
+          orderList:x.orders
+        };
+      });
+      // lost toggle
+      if(document.getElementById('lostOnly').checked) list=list.filter(x=>x.daysAgo>90);
+      list.sort((a,b)=>b.orders-a.orders);
+      drawPhoneTable(list);
+    }
+
+    /* ----------  draw phone list  ---------- */
+    function drawPhoneTable(list){
+      const tb=document.querySelector('#phoneTable tbody');
+      tb.innerHTML='';
+      list.forEach(p=>{
+        const tr=document.createElement('tr');
+        tr.style.cursor='pointer';
+        tr.title='Click for details';
+        tr.onclick=()=>drawPhoneDetail(p);
+        tr.innerHTML=`
+          <td>${p.phone}</td>
+          <td>${p.name}</td>
+          <td>${p.orders}</td>
+          <td>${p.total.toFixed(2)}</td>
+          <td>${p.avg.toFixed(2)}</td>
+          <td>${p.lastOrder.toLocaleDateString()}</td>
+          <td>${p.daysAgo}</td>`;
+        tb.appendChild(tr);
+      });
+      document.getElementById('stats').textContent=`Showing ${list.length} phones`;
+    }
+
+    /* ----------  phone detail  ---------- */
+    function drawPhoneDetail(p){
+      const div=document.getElementById('phoneDetail');
+      div.innerHTML=`
+        <h3>Detail for ${p.phone} – ${p.name}</h3>
+        <p><strong>Average spend:</strong> ${p.avg.toFixed(2)} |
+           <strong>Total spent:</strong> ${p.total.toFixed(2)} |
+           <strong>Last order:</strong> ${p.lastOrder.toLocaleDateString()} (${p.daysAgo} days ago)</p>
+        <table class="phone-table">
+          <thead><tr><th>Date</th><th>Restaurant</th><th>Payment</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${p.orderList.map(o=>`
+              <tr>
+                <td>${o.date.toLocaleDateString()}</td>
+                <td>${o.rest}</td>
+                <td>${o.pay}</td>
+                <td>${o.value.toFixed(2)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+  </script>
+</body>
+</html>
