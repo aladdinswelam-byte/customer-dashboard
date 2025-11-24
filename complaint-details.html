@@ -1,92 +1,216 @@
-<script>
-/* ----------  COMPLAINT-DETAILS LOGIC  ---------- */
-(async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const phone     = urlParams.get('phone');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Complaint Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00a79d;
+      --primary-dark: #008c83;
+      --primary-light: #00b8ad;
+      --surface: #ffffff;
+      --background: #f8fffe;
+      --text-primary: #1a3a3a;
+      --text-secondary: #5a7a7a;
+      --text-muted: #8a9e9e;
+      --border: #e0f0ee;
+      --border-light: #f0f8f7;
+      --shadow: 0 1px 3px 0 rgba(0, 167, 157, .1), 0 1px 2px 0 rgba(0, 167, 157, .06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 167, 157, .1), 0 2px 4px -1px rgba(0, 167, 157, .06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 167, 157, .1), 0 4px 6px -2px rgba(0, 167, 157, .05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all .2s cubic-bezier(.4, 0, .2, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      padding: 2rem;
+      background: linear-gradient(135deg, #f0fffd 0%, #f8fffe 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;
+    }
+    .back-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff; border: none; padding: .75rem 1.5rem; border-radius: var(--radius-sm);
+      cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: .5rem;
+      transition: var(--transition);
+    }
+    .back-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    h1 {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: .5rem;
+    }
+    .customer-info {
+      background: var(--surface); padding: 1.5rem 2rem; border-radius: var(--radius);
+      box-shadow: var(--shadow); margin-bottom: 2rem; border-left: 4px solid var(--primary);
+    }
+    .customer-info h2 { color: var(--primary); margin-bottom: .5rem; }
+    .customer-info p { color: var(--text-secondary); margin: .25rem 0; }
+    .section-header {
+      color: var(--primary); margin: 2rem 0 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--primary);
+      font-size: 1.5rem; font-weight: 700;
+    }
+    .table-container {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 2rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    thead { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+    th { padding: 1.25rem 1rem; text-align: left; color: #fff; font-weight: 600; font-size: .9rem; text-transform: uppercase; letter-spacing: .05em; }
+    tbody tr { transition: var(--transition); border-bottom: 1px solid var(--border-light); }
+    tbody tr:hover { background: #f5fffe; }
+    tbody tr:nth-child(even) { background: #f8fffe; }
+    td { padding: 1.25rem 1rem; color: var(--text-primary); font-weight: 500; }
+    .status-badge { padding: .25rem .75rem; border-radius: 20px; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .status-completed, .status-resolved { background: #d1fae5; color: #065f46; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-open { background: #fee2e2; color: #991b1b; }
+    .resolution-details { background: #f8fffe; padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 1rem; }
+    .resolution-text { line-height: 1.6; white-space: pre-wrap; direction: rtl; text-align: right; font-family: 'Inter', sans-serif; }
+    .no-data { text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem; background: #f8fffe; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+      .table-container { overflow-x: auto; }
+      th, td { padding: 1rem .75rem; font-size: .9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+    <h1>Complaint Details</h1>
+  </div>
 
-  if (!phone) {
-    document.getElementById('loading').textContent = 'No customer phone specified';
-    return;
-  }
+  <div id="loading" class="loading">Loading complaint details...</div>
 
-  try {
-    const [orders, complaints, resolutions] = await Promise.all([
-      fetch('data.json').then(r => r.json()),
-      fetch('complaints.json').then(r => r.json()),
-      fetch('resolutions.json').then(r => r.json())
-    ]);
+  <div id="content" style="display:none">
+    <div class="customer-info">
+      <h2 id="customerName">Loading...</h2>
+      <p id="customerPhone">Phone: Loading...</p>
+    </div>
 
-    /* ----------  filter customer data  ---------- */
-    const custOrders      = orders.filter(o => String(o['Account Phones']||'').trim() === phone);
-    const custComplaints  = complaints.filter(c => String(c.phone||'').trim() === phone);
-    const custResolutions = resolutions.filter(r => String(r.phone||'').trim() === phone);
+    <h2 class="section-header">1. Order with Complaint</h2>
+    <div class="table-container">
+      <table id="orderTable">
+        <thead><tr><th>Date</th><th>Restaurant</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody><tr><td colspan="4" class="loading">Loading order details...</td></tr></tbody>
+      </table>
+    </div>
 
-    /* ----------  show page  ---------- */
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
+    <h2 class="section-header">2. Complaint Details</h2>
+    <div class="table-container">
+      <table id="complaintTable">
+        <thead><tr><th>Complaint Date</th><th>Details</th><th>Status</th></tr></thead>
+        <tbody><tr><td colspan="3" class="loading">Loading complaint details...</td></tr></tbody>
+      </table>
+    </div>
 
-    /* ----------  customer header  ---------- */
-    const name = custOrders[0]?.['Account Name'] || custComplaints[0]?.name || 'Unknown Customer';
-    document.getElementById('customerName').textContent   = name;
-    document.getElementById('customerPhone').textContent  = `Phone: ${phone}`;
+    <h2 class="section-header">3. Resolution</h2>
+    <div class="table-container">
+      <table id="resolutionTable">
+        <thead><tr><th>Resolution Date</th><th>Restaurant</th><th>Resolved By</th><th>Status</th></tr></thead>
+        <tbody><tr><td colspan="4" class="loading">Loading resolution details...</td></tr></tbody>
+      </table>
+      <div id="resolutionDetails" class="resolution-details">
+        <strong>Resolution Details:</strong>
+        <div id="resolutionText" class="resolution-text">Loading resolution details...</div>
+      </div>
+    </div>
+  </div>
 
-    /* ----------  TABLE 1 – most-recent order  ---------- */
-    const orderBody = document.querySelector('#orderTable tbody');
-    if (custOrders.length) {
-      const recent = custOrders.sort((a,b) => new Date(b['Created']||0) - new Date(a['Created']||0))[0];
-      orderBody.innerHTML = `
-        <tr>
-          <td>${new Date(recent['Created']||'').toLocaleDateString()}</td>
-          <td>${recent['Resturant']||recent['Restaurant']||'N/A'}</td>
-          <td>EGP ${(parseFloat(recent['Total Price'])||0).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
-          <td><span class="status-badge status-completed">Completed</span></td>
-        </tr>`;
-    } else {
-      orderBody.innerHTML = '<tr><td colspan="4"><div class="no-data">No orders found</div></td></tr>';
+  <!-- =========  SCRIPT  ========= -->
+  <script>
+  (async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const phone = urlParams.get('phone');
+
+    if (!phone) {
+      document.getElementById('loading').textContent = 'No customer phone specified';
+      return;
     }
 
-    /* ----------  TABLE 2 – all complaints  ---------- */
-    const compBody = document.querySelector('#complaintTable tbody');
-    compBody.innerHTML = custComplaints.length
-      ? custComplaints.map(c => `
+    try {
+      const [orders, complaints, resolutions] = await Promise.all([
+        fetch('data.json').then(r => r.json()),
+        fetch('complaints.json').then(r => r.json()),
+        fetch('resolutions.json').then(r => r.json())
+      ]);
+
+      const custOrders      = orders.filter(o => String(o['Account Phones']||'').trim() === phone);
+      const custComplaints  = complaints.filter(c => String(c.phone||'').trim() === phone);
+      const custResolutions = resolutions.filter(r => String(r.phone||'').trim() === phone);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+
+      const name = custOrders[0]?.['Account Name'] || custComplaints[0]?.name || 'Unknown Customer';
+      document.getElementById('customerName').textContent  = name;
+      document.getElementById('customerPhone').textContent = `Phone: ${phone}`;
+
+      /* ---- Order table (most recent) ---- */
+      const orderBody = document.querySelector('#orderTable tbody');
+      if (custOrders.length) {
+        const recent = custOrders.sort((a,b) => new Date(b['Created']||0) - new Date(a['Created']||0))[0];
+        orderBody.innerHTML = `
           <tr>
-            <td>${c.date||'N/A'}</td>
-            <td>${c.details||'No details provided'}</td>
-            <td><span class="status-badge ${badgeClass(c.status)}">${c.status||'Open'}</span></td>
-          </tr>`).join('')
-      : '<tr><td colspan="3"><div class="no-data">No complaints found</div></td></tr>';
+            <td>${new Date(recent['Created']||'').toLocaleDateString()}</td>
+            <td>${recent['Resturant']||recent['Restaurant']||'N/A'}</td>
+            <td>EGP ${(parseFloat(recent['Total Price'])||0).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+            <td><span class="status-badge status-completed">Completed</span></td>
+          </tr>`;
+      } else {
+        orderBody.innerHTML = '<tr><td colspan="4"><div class="no-data">No orders found</div></td></tr>';
+      }
 
-    /* ----------  TABLE 3 – all resolutions  ---------- */
-    const resBody = document.querySelector('#resolutionTable tbody');
-    const resText   = document.getElementById('resolutionText');
+      /* ---- All complaints ---- */
+      const compBody = document.querySelector('#complaintTable tbody');
+      compBody.innerHTML = custComplaints.length
+        ? custComplaints.map(c => `
+            <tr>
+              <td>${c.date||'N/A'}</td>
+              <td>${c.details||'No details provided'}</td>
+              <td><span class="status-badge ${badge(c.status)}">${c.status||'Open'}</span></td>
+            </tr>`).join('')
+        : '<tr><td colspan="3"><div class="no-data">No complaints found</div></td></tr>';
 
-    if (custResolutions.length) {
-      resBody.innerHTML = custResolutions.map(r => `
-        <tr>
-          <td>${r.date||'N/A'}</td>
-          <td>${r.Resturant||'N/A'}</td>
-          <td>${r.Resolvedby||'Call Center Agent'}</td>
-          <td><span class="status-badge status-resolved">${r.Status||'Resolved'}</span></td>
-        </tr>`).join('');
-
-      resText.innerHTML = custResolutions.map(r =>
-        `<strong>${r.date||'N/A'}:</strong><br/>${r.Resolution||'No resolution details provided.'}<br/><br/>`
-      ).join('');
-    } else {
-      resBody.innerHTML = '<tr><td colspan="4"><div class="no-data">No resolution found</div></td></tr>';
-      resText.textContent = 'No resolution details available.';
+      /* ---- All resolutions ---- */
+      const resBody = document.querySelector('#resolutionTable tbody');
+      const resText = document.getElementById('resolutionText');
+      if (custResolutions.length) {
+        resBody.innerHTML = custResolutions.map(r => `
+          <tr>
+            <td>${r.date||'N/A'}</td>
+            <td>${r.Resturant||'N/A'}</td>
+            <td>${r.Resolvedby||'Call Center Agent'}</td>
+            <td><span class="status-badge status-resolved">${r.Status||'Resolved'}</span></td>
+          </tr>`).join('');
+        resText.innerHTML = custResolutions.map(r =>
+          `<strong>${r.date||'N/A'}:</strong><br/>${r.Resolution||'No resolution details provided.'}<br/><br/>`).join('');
+      } else {
+        resBody.innerHTML = '<tr><td colspan="4"><div class="no-data">No resolution found</div></td></tr>';
+        resText.textContent = 'No resolution details available.';
+      }
+    } catch (err) {
+      console.error(err);
+      document.getElementById('loading').textContent = 'Error loading complaint details';
     }
 
-  } catch (err) {
-    console.error(err);
-    document.getElementById('loading').textContent = 'Error loading complaint details';
-  }
-
-  /* ----------  helper  ---------- */
-  function badgeClass(status) {
-    if (status === 'Resolved') return 'status-resolved';
-    if (status === 'Pending') return 'status-pending';
-    return 'status-open';
-  }
-})();
-</script>
+    function badge(s) {
+      if (s === 'Resolved') return 'status-resolved';
+      if (s === 'Pending') return 'status-pending';
+      return 'status-open';
+    }
+  })();
+  </script>
+</body>
+</html>
