@@ -5,6 +5,7 @@
   <title>Customer Order History</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* ----------  RESET / BASE  ---------- */
     :root {
@@ -27,7 +28,7 @@
       
       /* Tier Colors */
       --vip-color: #FFD700;
-      --gold-color: #FFD700;
+      --gold-color: #FFA500;
       --silver-color: #C0C0C0;
       --bronze-color: #CD7F32;
       --new-color: #6B7280;
@@ -70,6 +71,7 @@
       align-items: center;
       gap: 0.5rem;
       transition: var(--transition);
+      box-shadow: var(--shadow);
     }
 
     .back-btn:hover {
@@ -100,18 +102,20 @@
     .customer-info h2 {
       color: var(--primary);
       margin-bottom: 0.5rem;
+      font-size: 1.5rem;
     }
 
     .customer-info p {
       color: var(--text-secondary);
       margin: 0.25rem 0;
+      font-size: 1rem;
     }
 
     /* Customer Analysis Banner */
     .customer-analysis {
       background: linear-gradient(135deg, var(--new-color)33 0%, var(--new-color)66 100%);
       color: white;
-      padding: 20px;
+      padding: 1.5rem 2rem;
       border-radius: var(--radius);
       margin-bottom: 2rem;
       box-shadow: var(--shadow-lg);
@@ -128,71 +132,84 @@
 
     .analysis-text h3 {
       margin: 0;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.3rem;
+      font-weight: 700;
     }
 
     .analysis-text p {
-      margin: 5px 0 0 0;
+      margin: 8px 0 0 0;
       opacity: 0.9;
-      font-size: 0.95rem;
+      font-size: 1rem;
+      font-weight: 500;
     }
 
     .tier-badge {
       background: rgba(255,255,255,0.2);
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 25px;
-      font-weight: 700;
-      font-size: 1rem;
+      font-weight: 800;
+      font-size: 1.1rem;
       backdrop-filter: blur(10px);
       border: 2px solid rgba(255,255,255,0.3);
       text-align: center;
-      min-width: 120px;
+      min-width: 140px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     /* VIP Tier */
     .tier-vip {
-      background: linear-gradient(135deg, var(--vip-color)33 0%, var(--vip-color)66 100%) !important;
+      background: linear-gradient(135deg, var(--vip-color) 0%, #FFEC8B 100%) !important;
       border-color: var(--vip-color) !important;
+      color: #8B7500 !important;
     }
     .badge-vip {
       background: #B8860B !important;
+      color: white !important;
     }
 
     /* Gold Tier */
     .tier-gold {
-      background: linear-gradient(135deg, var(--gold-color)33 0%, var(--gold-color)66 100%) !important;
+      background: linear-gradient(135deg, var(--gold-color) 0%, #FFD39B 100%) !important;
       border-color: var(--gold-color) !important;
+      color: #8B5A00 !important;
     }
     .badge-gold {
       background: #B8860B !important;
+      color: white !important;
     }
 
     /* Silver Tier */
     .tier-silver {
-      background: linear-gradient(135deg, var(--silver-color)33 0%, var(--silver-color)66 100%) !important;
+      background: linear-gradient(135deg, var(--silver-color) 0%, #E8E8E8 100%) !important;
       border-color: var(--silver-color) !important;
+      color: #696969 !important;
     }
     .badge-silver {
       background: #808080 !important;
+      color: white !important;
     }
 
     /* Bronze Tier */
     .tier-bronze {
-      background: linear-gradient(135deg, var(--bronze-color)33 0%, var(--bronze-color)66 100%) !important;
+      background: linear-gradient(135deg, var(--bronze-color) 0%, #E8C9A9 100%) !important;
       border-color: var(--bronze-color) !important;
+      color: #8B4513 !important;
     }
     .badge-bronze {
       background: #8B4513 !important;
+      color: white !important;
     }
 
     /* New Tier */
     .tier-new {
-      background: linear-gradient(135deg, var(--new-color)33 0%, var(--new-color)66 100%) !important;
+      background: linear-gradient(135deg, var(--new-color) 0%, #A0AEC0 100%) !important;
       border-color: var(--new-color) !important;
+      color: #4A5568 !important;
     }
     .badge-new {
-      background: #4B5563 !important;
+      background: #4A5568 !important;
+      color: white !important;
     }
 
     /* Orders Table */
@@ -264,6 +281,7 @@
       text-align: center;
       padding: 2rem;
       color: var(--text-secondary);
+      font-size: 1.1rem;
     }
 
     /* No Data */
@@ -272,6 +290,38 @@
       color: var(--text-muted);
       font-style: italic;
       padding: 2rem;
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+      border-top: 4px solid var(--primary);
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     /* Mobile Responsive */
@@ -299,16 +349,29 @@
         padding: 1rem 0.75rem;
         font-size: 0.9rem;
       }
+      
+      .stats-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .customer-info, .customer-analysis {
+        padding: 1.25rem;
+      }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+    <a href="index.html" class="back-btn">
+      <i class="fas fa-arrow-left"></i>
+      Back to Dashboard
+    </a>
     <h1>Customer Order History</h1>
   </div>
 
-  <div id="loading" class="loading">Loading order history...</div>
+  <div id="loading" class="loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading order history...
+  </div>
 
   <div id="content" style="display: none;">
     <!-- Customer Information -->
@@ -316,6 +379,26 @@
       <h2 id="customerName">Loading...</h2>
       <p id="customerPhone">Phone: Loading...</p>
       <p id="orderStats">Total Orders: Loading... | Total Spent: Loading...</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row" id="statsRow" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-value" id="statOrders">0</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSpent">EGP 0.00</div>
+        <div class="stat-label">Total Spent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAvgOrder">EGP 0.00</div>
+        <div class="stat-label">Avg Order Value</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statFrequency">0.0/week</div>
+        <div class="stat-label">Order Frequency</div>
+      </div>
     </div>
 
     <!-- Customer Analysis Banner -->
@@ -361,7 +444,7 @@
           tier: "New", 
           color: "var(--new-color)",
           badgeColor: "var(--new-color)",
-          message: "New customer - No orders yet" 
+          reason: "New customer with no orders yet"
         };
       }
 
@@ -379,7 +462,7 @@
         ordersPerWeek = totalOrders / weeksActive;
       }
 
-      // Tier scoring system - Adjust these numbers for your business
+      // Tier scoring system
       let score = 0;
       
       // Order frequency points
@@ -392,69 +475,61 @@
       else if (totalOrders >= 10) score += 2;
       else if (totalOrders >= 5) score += 1;
       
-      // Average order value points (adjust EGP thresholds for your business)
+      // Average order value points (adjust for your business)
       if (avgOrderValue >= 50) score += 3;
       else if (avgOrderValue >= 30) score += 2;
       else if (avgOrderValue >= 15) score += 1;
 
-      // Determine tier
-      if (score >= 8) return { 
-        tier: "VIP", 
-        color: "var(--vip-color)",
-        badgeColor: "var(--vip-color)",
-        score 
-      };
-      if (score >= 6) return { 
-        tier: "Gold", 
-        color: "var(--gold-color)",
-        badgeColor: "var(--gold-color)", 
-        score 
-      };
-      if (score >= 4) return { 
-        tier: "Silver", 
-        color: "var(--silver-color)",
-        badgeColor: "var(--silver-color)",
-        score 
-      };
-      if (score >= 2) return { 
-        tier: "Bronze", 
-        color: "var(--bronze-color)",
-        badgeColor: "var(--bronze-color)",
-        score 
-      };
+      // Determine tier and create reason message
+      let tier, reasonMessage;
+      if (score >= 8) {
+        tier = "VIP";
+        reasonMessage = `VIP customer with ${totalOrders} orders averaging EGP ${avgOrderValue.toFixed(2)} (${ordersPerWeek.toFixed(1)} orders/week)`;
+      } else if (score >= 6) {
+        tier = "Gold";
+        reasonMessage = `Gold customer with ${totalOrders} orders averaging EGP ${avgOrderValue.toFixed(2)} (${ordersPerWeek.toFixed(1)} orders/week)`;
+      } else if (score >= 4) {
+        tier = "Silver";
+        reasonMessage = `Silver customer with ${totalOrders} orders averaging EGP ${avgOrderValue.toFixed(2)} (${ordersPerWeek.toFixed(1)} orders/week)`;
+      } else if (score >= 2) {
+        tier = "Bronze";
+        reasonMessage = `Bronze customer with ${totalOrders} orders averaging EGP ${avgOrderValue.toFixed(2)} (${ordersPerWeek.toFixed(1)} orders/week)`;
+      } else {
+        tier = "New";
+        reasonMessage = `New customer with ${totalOrders} orders averaging EGP ${avgOrderValue.toFixed(2)}`;
+      }
+
       return { 
-        tier: "New", 
-        color: "var(--new-color)",
-        badgeColor: "var(--new-color)",
-        score 
+        tier: tier, 
+        color: `var(--${tier.toLowerCase()}-color)`,
+        badgeColor: `var(--${tier.toLowerCase()}-color)`,
+        reason: reasonMessage,
+        score: score,
+        totalOrders: totalOrders,
+        totalSpent: totalSpent,
+        avgOrderValue: avgOrderValue,
+        ordersPerWeek: ordersPerWeek
       };
     }
 
     function displayCustomerAnalysis(customerName, customerOrders) {
       const tierInfo = calculateCustomerTier(customerOrders);
-      const totalOrders = customerOrders.length;
-      const totalSpent = customerOrders.reduce((sum, order) => sum + (parseFloat(order['Total Price']) || 0), 0);
-      const avgOrderValue = totalSpent / totalOrders;
       
-      // Calculate orders per week for display
-      let ordersPerWeek = 0;
-      let weeksActive = 1;
-      if (customerOrders.length > 1) {
-        const sortedOrders = customerOrders.sort((a, b) => new Date(a['Created'] || '') - new Date(b['Created'] || ''));
-        const firstOrder = new Date(sortedOrders[0]['Created'] || '');
-        const lastOrder = new Date(sortedOrders[sortedOrders.length - 1]['Created'] || '');
-        weeksActive = Math.max(1, (lastOrder - firstOrder) / (7 * 24 * 60 * 60 * 1000));
-        ordersPerWeek = totalOrders / weeksActive;
-      }
-
       // Create messages
       const mainMessage = `${customerName} is a ${tierInfo.tier} customer`;
-      const detailsMessage = `${totalOrders} orders • EGP ${avgOrderValue.toFixed(2)} avg • ${ordersPerWeek.toFixed(1)} orders/week`;
+      const detailsMessage = tierInfo.reason;
 
       // Update the display
       document.getElementById('analysisMessage').textContent = mainMessage;
       document.getElementById('analysisDetails').textContent = detailsMessage;
       document.getElementById('tierBadge').textContent = `${tierInfo.tier} Tier`;
+      
+      // Update stats
+      document.getElementById('statOrders').textContent = tierInfo.totalOrders;
+      document.getElementById('statSpent').textContent = `EGP ${tierInfo.totalSpent.toFixed(2)}`;
+      document.getElementById('statAvgOrder').textContent = `EGP ${tierInfo.avgOrderValue.toFixed(2)}`;
+      document.getElementById('statFrequency').textContent = `${tierInfo.ordersPerWeek.toFixed(1)}/week`;
+      document.getElementById('statsRow').style.display = 'grid';
       
       // Apply tier-specific styling
       const analysisDiv = document.getElementById('customerAnalysis');
@@ -521,7 +596,7 @@
 
       } catch (error) {
         console.error('Error loading order history:', error);
-        document.getElementById('loading').innerHTML = 'Error loading order history';
+        document.getElementById('loading').innerHTML = 'Error loading order history. Please check if data.json exists.';
       }
     }
 
