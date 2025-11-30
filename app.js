@@ -124,7 +124,7 @@ function populateDropdowns(){
 /* ----------  FILTER WIRING  ---------- */
 function wireFilters(){
   ['restFilter','yearFilter','avgMin','avgMax','totMin','totMax',
-   'lastMin','lastMax','ordMin','ordMax','lostOnly','complaintType','compMin']
+   'lastMin','lastMax','ordMin','ordMax','lostOnly','complaintType','compMin','phoneSearch']
    .forEach(id=>{
      const element = document.getElementById(id);
      if (element) {
@@ -149,6 +149,7 @@ function applyFilters(){
   const lostOnly= document.getElementById('lostOnly').checked;
   const complaintType = document.getElementById('complaintType')?.value || '';
   const compMin = parseInt(document.getElementById('compMin').value)||0;
+  const phoneSearch = document.getElementById('phoneSearch')?.value || '';
 
   let list=[...customersMap.values()].filter(c=>{
     const yrs = lastOrderYear(c);
@@ -165,7 +166,8 @@ function applyFilters(){
       c.orders.length>=ordMin && c.orders.length<=ordMax &&
       (!lostOnly||days>=90) &&
       (!complaintType||custComplaints.some(x=>(x.category||'').toLowerCase()===complaintType.toLowerCase())) &&
-      custComplaints.length>=compMin
+      custComplaints.length>=compMin &&
+      (!phoneSearch||c.phone.includes(phoneSearch))
     );
   });
   list.sort((a,b)=>b.orders.length-a.orders.length);
