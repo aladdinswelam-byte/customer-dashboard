@@ -239,8 +239,12 @@
       </div>
     </div>
     
-    <!-- Row 4: Complaint dropdown and Lost customers checkbox -->
-    <div class="filter-actions">
+    <!-- Row 4: Phone Search, Complaint dropdown and Lost customers checkbox -->
+    <div class="filter-row">
+      <div class="filter-group">
+        <label class="filter-label">Search Phone Number</label>
+        <input type="text" id="phoneSearch" class="filter-input" placeholder="Enter phone number...">
+      </div>
       <div class="filter-group">
         <label class="filter-label">Complaint Type</label>
         <select id="complaintType" class="filter-input">
@@ -260,6 +264,10 @@
         <label class="filter-label">Min Complaints</label>
         <input type="number" id="compMin" class="filter-input" placeholder="0">
       </div>
+    </div>
+    
+    <!-- Row 5: Actions -->
+    <div class="filter-actions">
       <label class="checkbox-label">
         <input type="checkbox" id="lostOnly">
         <span class="checkmark"></span>
