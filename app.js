@@ -9,41 +9,35 @@ const COL_PAY   = 'Payment Method';
 const today = new Date();
 
 let rawOrders    = [];
-let customersMap = new Map();   // phone -> customer object
+let customersMap = new Map();
 let complaints   = [];
 
-/* ----------  DATE NORMALISER (FIXED FOR BOTH FORMATS)  ---------- */
+/* ----------  DATE NORMALISER  ---------- */
 function parseDate(d) {
   if (!d) return null;
   
-  // Handle ISO format (yyyy-mm-dd)
   if (d.includes('-') && d.split('-')[0].length === 4) {
     return new Date(d);
   }
   
-  // Handle dd-mm-yyyy and mm-dd-yyyy formats
   if (d.includes('-')) {
     const parts = d.split('-').map(Number);
     if (parts.length === 3) {
-      // Auto-detect format: if first part > 12, it's dd-mm-yyyy
       if (parts[0] > 12) {
-        // dd-mm-yyyy format
         return new Date(parts[2], parts[1] - 1, parts[0]);
       } else {
-        // mm-dd-yyyy format  
         return new Date(parts[2], parts[0] - 1, parts[1]);
       }
     }
   }
   
-  // Handle dd/mm/yyyy format (your existing code)
   if (d.includes('/')) {
     const [day, month, year] = d.split('/').map(Number);
     return new Date(year, month - 1, day);
   }
   
   console.warn('Unknown date format:', d);
-  return new Date(0); // Return invalid date as fallback
+  return new Date(0);
 }
 
 /* ----------  LOAD & BOOT  ---------- */
@@ -69,7 +63,7 @@ function setStatus(msg, color='black'){
   bar.textContent=msg; bar.style.color=color;
 }
 
-/* ----------  BUILD CUSTOMER MAP (FIXED)  ---------- */
+/* ----------  BUILD CUSTOMER MAP  ---------- */
 function buildCustomers(){
   customersMap.clear();
   rawOrders.forEach(o=>{
@@ -80,7 +74,7 @@ function buildCustomers(){
       customersMap.set(phone,{
         phone,
         name:o[COL_NAME]||'—',
-        orders:[],               // ← ARRAY of order objects
+        orders:[],
         total:0
       });
     }
@@ -101,7 +95,7 @@ function updateKPICards(){
   const list = [...customersMap.values()];
   const totalRev   = list.reduce((s,c)=>s+c.total,0);
   const totalOrd   = list.reduce((s,c)=>s+c.orders.length,0);
-  const lostCnt    = list.filter(c=>daysAgo(c)>=90).length;  // Fixed: changed from <0 to >=90
+  const lostCnt    = list.filter(c=>daysAgo(c)>=90).length;
   const withComp   = list.filter(c=>complaints.filter(x=>x.phone===c.phone).length>0).length;
   const oldTala    = list.filter(c=>c.orders.some(o=>['Talabat','Elmenus','Instashop'].includes(o.rest))).length;
 
@@ -236,7 +230,6 @@ function daysAgo(c){
   const lastDate = lastOrderDate(c);
   if (!lastDate || lastDate.getTime() === new Date(0).getTime()) return 0;
   
-  // Normalize both dates to midnight to avoid timezone issues
   const todayNormalized = new Date(today);
   todayNormalized.setHours(0, 0, 0, 0);
   
@@ -246,5 +239,5 @@ function daysAgo(c){
   const diffTime = todayNormalized - lastDateNormalized;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
-  return Math.max(0, diffDays); // Ensure non-negative
+  return Math.max(0, diffDays);
 }
