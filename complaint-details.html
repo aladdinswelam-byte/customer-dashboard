@@ -125,7 +125,6 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    .status-completed { background: #d1fae5; color: #065f46; }
     .status-resolved { background: #d1fae5; color: #065f46; }
     .status-pending { background: #fef3c7; color: #92400e; }
     .status-open { background: #fee2e2; color: #991b1b; }
@@ -179,26 +178,8 @@
       <p id="customerPhone">Phone: Loading...</p>
     </div>
 
-    <h2 class="section-header">1. Order with Complaint</h2>
-    <div class="table-container">
-      <table id="orderTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Restaurant</th>
-            <th>Amount</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="4" class="loading">Loading order details...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h2 class="section-header">2. Complaint Details</h2>
+    <!-- COMPLAINTS -->
+    <h2 class="section-header">Complaints</h2>
     <div class="table-container">
       <table id="complaintTable">
         <thead>
@@ -209,14 +190,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td colspan="3" class="loading">Loading complaint details...</td>
-          </tr>
+          <tr><td colspan="3" class="loading">Loading complaints...</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h2 class="section-header">3. Resolution</h2>
+    <!-- RESOLUTIONS -->
+    <h2 class="section-header">Resolutions</h2>
     <div class="table-container">
       <table id="resolutionTable">
         <thead>
@@ -228,9 +208,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td colspan="4" class="loading">Loading resolution details...</td>
-          </tr>
+          <tr><td colspan="4" class="loading">Loading resolutions...</td></tr>
         </tbody>
       </table>
       <div id="resolutionDetails" class="resolution-details">
@@ -251,79 +229,56 @@
       }
 
       try {
-        const [dataRows, compRows, resolutions] = await Promise.all([
-          fetch('data.json').then(r => r.json()),
+        const [compRows, resolutions] = await Promise.all([
           fetch('complaints.json').then(r => r.json()),
           fetch('resolutions.json').then(r => r.json())
         ]);
 
-        const customerOrders = dataRows.filter(order => 
-          (order['Account Phones'] || '').toString().trim() === phone
-        );
-        const customerComplaints = compRows.filter(c => 
+        const customerComplaints = compRows.filter(c =>
           (c.phone || '').toString().trim() === phone
         );
-        const customerResolutions = resolutions.filter(r => 
+        const customerResolutions = resolutions.filter(r =>
           (r.phone || '').toString().trim() === phone
         );
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
 
-        const customerName = customerOrders[0]?.['Account Name'] || customerComplaints[0]?.name || 'Unknown Customer';
+        const customerName = customerComplaints[0]?.name || 'Unknown Customer';
         document.getElementById('customerName').textContent = customerName;
         document.getElementById('customerPhone').textContent = `Phone: ${phone}`;
 
-        /* ----------  TABLE 1: ORDERS  ---------- */
-        const orderTbody = document.querySelector('#orderTable tbody');
-        if (customerOrders.length) {
-          orderTbody.innerHTML = customerOrders
-            .sort((a, b) => new Date(b['Created']) - new Date(a['Created']))
-            .map(o => `
-              <tr>
-                <td>${new Date(o['Created']||0).toLocaleDateString()}</td>
-                <td>${o['Resturant']||o['Restaurant']||'N/A'}</td>
-                <td>EGP ${(parseFloat(o['Total Price'])||0).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-              </tr>`).join('');
-        } else {
-          orderTbody.innerHTML = '<tr><td colspan="4"><div class="no-data">No orders found</div></td></tr>';
-        }
-
-        /* ----------  TABLE 2: COMPLAINTS  ---------- */
+        /* ---- COMPLAINTS TABLE ---- */
         const complaintTbody = document.querySelector('#complaintTable tbody');
         if (customerComplaints.length) {
-          complaintTbody.innerHTML = customerComplaints
-            .map(c => `
-              <tr>
-                <td>${c.date||'N/A'}</td>
-                <td>${c.details||'No details'}</td>
-                <td><span class="status-badge ${
-                      c.status==='Resolved' ? 'status-resolved' :
-                      c.status==='Pending'  ? 'status-pending'  : 'status-open'}">${c.status||'Open'}</span></td>
-              </tr>`).join('');
+          complaintTbody.innerHTML = customerComplaints.map(c => `
+            <tr>
+              <td>${c.date || 'N/A'}</td>
+              <td>${c.details || 'No details provided'}</td>
+              <td><span class="status-badge ${
+                c.status === 'Resolved' ? 'status-resolved' :
+                c.status === 'Pending'  ? 'status-pending'  : 'status-open'}">${c.status || 'Open'}</span></td>
+            </tr>`).join('');
         } else {
           complaintTbody.innerHTML = '<tr><td colspan="3"><div class="no-data">No complaints found</div></td></tr>';
         }
 
-        /* ----------  TABLE 3: RESOLUTIONS  ---------- */
+        /* ---- RESOLUTIONS TABLE ---- */
         const resolutionTbody = document.querySelector('#resolutionTable tbody');
         const resolutionText = document.getElementById('resolutionText');
         if (customerResolutions.length) {
-          resolutionTbody.innerHTML = customerResolutions
-            .map(r => `
-              <tr>
-                <td>${r.date||'N/A'}</td>
-                <td>${r.Resturant||'N/A'}</td>
-                <td>${r.Resolvedby||'Call Center Agent'}</td>
-                <td><span class="status-badge status-resolved">${r.Status||'Resolved'}</span></td>
-              </tr>`).join('');
-          resolutionText.textContent = customerResolutions.map(r => r.Resolution||'').join('\n\n---\n\n');
+          resolutionTbody.innerHTML = customerResolutions.map(r => `
+            <tr>
+              <td>${r.date || 'N/A'}</td>
+              <td>${r.Resturant || 'N/A'}</td>
+              <td>${r.Resolvedby || 'Call Center Agent'}</td>
+              <td><span class="status-badge status-resolved">${r.Status || 'Resolved'}</span></td>
+            </tr>`).join('');
+          resolutionText.textContent = customerResolutions.map(r => r.Resolution || '').join('\n\n---\n\n');
         } else {
           resolutionTbody.innerHTML = '<tr><td colspan="4"><div class="no-data">No resolution found</div></td></tr>';
           resolutionText.textContent = 'No resolution details available.';
         }
-
       } catch (error) {
         console.error('Error loading complaint details:', error);
         document.getElementById('loading').innerHTML = 'Error loading complaint details';
